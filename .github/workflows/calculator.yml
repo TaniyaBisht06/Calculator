@@ -39,4 +39,4 @@ jobs:
 
       - name: Build Successful
         run: |
-          echo "Calculator application built successfully!"
+          echo "Calculator application built successfully!!"
