@@ -1,140 +1,218 @@
+
 import sympy as sp
 from fractions import Fraction
 
+
 # ---------------- BASIC CALCULATOR ---------------- #
 
-def basic_calculator():
-    print("\n--- Basic Calculator ---")
-    print("1. Addition")
-    print("2. Subtraction")
-    print("3. Multiplication")
-    print("4. Division")
+def basic_calculator(choice, a, b):
+    """
+    Performs basic arithmetic operations.
 
-    choice = int(input("Enter choice (1-4): "))
-    a = int(input("Enter first number: "))
-    b = int(input("Enter second number: "))
+    choice:
+        1 = Addition
+        2 = Subtraction
+        3 = Multiplication
+        4 = Division
+    """
 
+    # Convert incoming values to integers
+    choice = int(choice)
+    a = int(a)
+    b = int(b)
+
+    # Addition
     if choice == 1:
-        print("Result =", a + b)
+        return {
+            "success": True,
+            "operation": "Addition",
+            "result": a + b
+        }
 
+    # Subtraction
     elif choice == 2:
-        print("Result =", a - b)
+        return {
+            "success": True,
+            "operation": "Subtraction",
+            "result": a - b
+        }
 
+    # Multiplication
     elif choice == 3:
-        print("Result =", a * b)
+        return {
+            "success": True,
+            "operation": "Multiplication",
+            "result": a * b
+        }
 
+    # Division
     elif choice == 4:
+
+        # Division by zero
         if b == 0:
-            print("Division by zero not allowed!")
+            return {
+                "success": False,
+                "error": "Division by zero not allowed!"
+            }
+
         else:
             frac = Fraction(a, b)
-            print("Fraction form =", frac)
-            print("Decimal form =", round(a / b, 2))
+
+            return {
+                "success": True,
+                "operation": "Division",
+                "fraction": str(frac),
+                "decimal": round(a / b, 2)
+            }
+
+    # Invalid operation
+    else:
+        return {
+            "success": False,
+            "error": "Invalid choice! Please select 1-4."
+        }
+
 
 # ---------------- MATRIX INPUT ---------------- #
 
-def input_matrix(augmented=False):
-    rows = int(input("Enter number of rows: "))
-    cols = int(input("Enter number of columns: "))
+def input_matrix(matrix_data, augmented=False):
+    """
+    Converts the matrix received from the frontend
+    into a SymPy Matrix.
+    """
 
-    if augmented:
-        print("⚠ If augmented, include constant column as last column.")
+    try:
+        matrix = []
 
-    print("Enter matrix elements row-wise (space separated):")
+        for row in matrix_data:
+            matrix.append([int(value) for value in row])
 
-    matrix = []
-    for i in range(rows):
-        row = list(map(int, input().split()))
-        matrix.append(row)
+        M = sp.Matrix(matrix)
 
-    return sp.Matrix(matrix)
+        return M
+
+    except (ValueError, TypeError):
+        raise ValueError("Invalid matrix values.")
+
+
+# ---------------- MATRIX HELPER ---------------- #
+
+def matrix_to_list(matrix):
+    """
+    Converts a SymPy Matrix into a JSON-friendly list.
+
+    SymPy values such as Rational(1, 2) cannot be directly
+    returned through JSON, so they are converted to strings.
+    """
+
+    return [
+        [str(value) for value in row]
+        for row in matrix.tolist()
+    ]
+
 
 # ---------------- MATRIX CALCULATOR ---------------- #
 
-def matrix_calculator():
-    print("\n--- Matrix Calculator ---")
-    print("1. Matrix Inverse")
-    print("2. REF")
-    print("3. RREF")
+def matrix_calculator(operation, matrix_data):
+    """
+    Performs matrix operations.
 
-    choice = int(input("Enter your choice: "))
+    operation:
+        inverse = Matrix Inverse
+        ref     = Row Echelon Form
+        rref    = Reduced Row Echelon Form
+    """
 
-    # -------- INVERSE -------- #
-    if choice == 1:
-        M = input_matrix()
+    operation = str(operation).lower()
 
-        print("\nInput Matrix:")
-        sp.pprint(M)
+    # Convert frontend matrix data to SymPy Matrix
+    try:
+        M = input_matrix(matrix_data)
 
+    except ValueError as error:
+        return {
+            "success": False,
+            "error": str(error)
+        }
+
+    # Make sure matrix is not empty
+    if M.rows == 0 or M.cols == 0:
+        return {
+            "success": False,
+            "error": "Matrix cannot be empty."
+        }
+
+    # ==================================================
+    # MATRIX INVERSE
+    # ==================================================
+
+    if operation == "inverse":
+
+        # Inverse only exists for square matrices
         if M.rows != M.cols:
-            print("Inverse only exists for square matrices.")
-            return
+            return {
+                "success": False,
+                "error": "Inverse only exists for square matrices."
+            }
 
+        # Check whether matrix is singular
         if M.det() == 0:
-            print("Matrix is singular. Inverse does not exist.")
-            return
+            return {
+                "success": False,
+                "error": "Matrix is singular. Inverse does not exist."
+            }
 
-        print("\nCofactor Matrix:")
-        sp.pprint(M.cofactor_matrix())
+        # Cofactor Matrix
+        cofactor = M.cofactor_matrix()
 
-        print("\nInverse Matrix:")
-        sp.pprint(M.inv())
+        # Inverse Matrix
+        inverse = M.inv()
 
-    # -------- REF or RREF -------- #
-    elif choice == 2 or choice == 3:
+        return {
+            "success": True,
+            "operation": "Matrix Inverse",
+            "input_matrix": matrix_to_list(M),
+            "cofactor_matrix": matrix_to_list(cofactor),
+            "result_matrix": matrix_to_list(inverse)
+        }
 
-        print("\n1. Normal Matrix")
-        print("2. Augmented Matrix")
+    # ==================================================
+    # ROW ECHELON FORM (REF)
+    # ==================================================
 
-        matrix_type = int(input("Enter your choice: "))
+    elif operation == "ref":
 
-        if matrix_type == 1:
-            M = input_matrix(augmented=False)
+        ref_matrix = M.echelon_form()
 
-        elif matrix_type == 2:
-            M = input_matrix(augmented=True)
+        return {
+            "success": True,
+            "operation": "Row Echelon Form (REF)",
+            "input_matrix": matrix_to_list(M),
+            "result_matrix": matrix_to_list(ref_matrix)
+        }
 
-        else:
-            print("Invalid choice!")
-            return
+    # ==================================================
+    # REDUCED ROW ECHELON FORM (RREF)
+    # ==================================================
 
-        print("\nInput Matrix:")
-        sp.pprint(M)
+    elif operation == "rref":
 
-        if choice == 2:
-            print("\nRow Echelon Form (REF):")
-            sp.pprint(M.echelon_form())
+        rref_matrix, pivot_columns = M.rref()
 
-        elif choice == 3:
-            print("\nReduced Row Echelon Form (RREF):")
-            rref_matrix, _ = M.rref()
-            sp.pprint(rref_matrix)
+        return {
+            "success": True,
+            "operation": "Reduced Row Echelon Form (RREF)",
+            "input_matrix": matrix_to_list(M),
+            "result_matrix": matrix_to_list(rref_matrix),
+            "pivot_columns": list(pivot_columns)
+        }
+
+    # ==================================================
+    # INVALID OPERATION
+    # ==================================================
 
     else:
-        print("Invalid choice!")
-
-# ---------------- MAIN MENU ---------------- #
-
-def main():
-    while True:
-        print("\n====== ADVANCED CALCULATOR ======")
-        print("1. Basic Calculator")
-        print("2. Matrix Calculator")
-        print("3. Exit")
-
-        choice = int(input("Enter your choice: "))
-
-        if choice == 1:
-            basic_calculator()
-
-        elif choice == 2:
-            matrix_calculator()
-
-        elif choice == 3:
-            print("Exiting...")
-            break
-
-        else:
-            print("Invalid choice!")
-
-main()
+        return {
+            "success": False,
+            "error": "Invalid matrix operation."
+        }
