@@ -1,6 +1,10 @@
 from fractions import Fraction
 
 import sympy as sp
+from flask import Flask, jsonify, request
+
+
+app = Flask(__name__)
 
 
 def error_response(message):
@@ -190,3 +194,87 @@ def matrix_calculator(operation, matrix_data):
         return operation_handler(matrix)
     except (ValueError, TypeError, ZeroDivisionError) as error:
         return error_response(str(error))
+
+
+# ============================================================
+# FLASK WEB APPLICATION
+# ============================================================
+
+@app.route("/")
+def home():
+    return """
+    <h1>Calculator API</h1>
+    <p>Calculator application is running.</p>
+
+    <h2>Available Endpoints</h2>
+
+    <ul>
+        <li>
+            <a href="/calculate?choice=1&a=10&b=5">
+                Basic Calculator
+            </a>
+        </li>
+
+        <li>
+            <a href="/search?q=test">
+                Search
+            </a>
+        </li>
+    </ul>
+    """
+
+
+@app.route("/calculate", methods=["GET"])
+def calculate():
+    choice = request.args.get("choice")
+    a = request.args.get("a")
+    b = request.args.get("b")
+
+    result = basic_calculator(choice, a, b)
+
+    return jsonify(result)
+
+
+@app.route("/matrix", methods=["POST"])
+def matrix():
+    data = request.get_json()
+
+    if not data:
+        return jsonify(
+            error_response("JSON data is required.")
+        ), 400
+
+    operation = data.get("operation")
+    matrix_data = data.get("matrix")
+
+    result = matrix_calculator(
+        operation,
+        matrix_data
+    )
+
+    return jsonify(result)
+
+
+# ============================================================
+# DELIBERATELY VULNERABLE ENDPOINT FOR DAST LAB
+# ============================================================
+
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+
+    # INTENTIONALLY VULNERABLE:
+    # User input is reflected directly into HTML.
+    # This endpoint is used only for the OWASP ZAP lab.
+    return f"<h2>Search Result: {query}</h2>"
+
+
+# ============================================================
+# START APPLICATION
+# ============================================================
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
