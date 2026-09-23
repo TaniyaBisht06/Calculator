@@ -67,8 +67,74 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+      # ==========================================================
+      # DOCKER BUILD
+      # ==========================================================
+
+      - name: Build Docker Image
+        run: |
+          docker build -t calculator-app .
+
+      # ---------------- CREATE DOCKER NETWORK ----------------
+
+      - name: Create Docker Network
+        run: |
+          docker network create zap-network
+
+      # ---------------- RUN CALCULATOR APPLICATION ----------------
+
+      - name: Run Calculator Application
+        run: |
+          docker run -d \
+            --name calculator-app \
+            --network zap-network \
+            calculator-app
+
+      # ---------------- WAIT FOR APPLICATION ----------------
+
+      - name: Wait for Calculator Application
+        run: |
+          sleep 10
+          docker ps
+
+      # ==========================================================
+      # OWASP ZAP DAST
+      # ==========================================================
+
+      - name: OWASP ZAP DAST Scan
+        run: |
+          docker run --rm \
+            --network zap-network \
+            -v "${{ github.workspace }}:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://calculator-app:5000 \
+            -r zap-report.html \
+            -J zap-report.json \
+            -I
+
+      # ---------------- UPLOAD ZAP REPORT ----------------
+
+      - name: Upload OWASP ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-zap-report
+          path: |
+            zap-report.html
+            zap-report.json
+
+      # ---------------- CLEANUP ----------------
+
+      - name: Stop Calculator Container
+        if: always()
+        run: |
+          docker stop calculator-app || true
+          docker rm calculator-app || true
+          docker network rm zap-network || true
+
       # ---------------- BUILD SUCCESS ----------------
 
       - name: Build Successful
         run: |
-          echo "Calculator application built successfully!!"
+          echo "Calculator application built and security tested successfully!!"
