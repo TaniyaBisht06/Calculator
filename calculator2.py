@@ -2,6 +2,7 @@ from fractions import Fraction
 
 import sympy as sp
 from flask import Flask, jsonify, request
+from markupsafe import escape
 
 
 app = Flask(__name__)
@@ -79,15 +80,21 @@ def input_matrix(matrix_data):
         )
 
     if not matrix_data:
-        raise ValueError("Matrix cannot be empty.")
+        raise ValueError(
+            "Matrix cannot be empty."
+        )
 
     try:
         matrix = sp.Matrix(matrix_data)
     except (TypeError, ValueError) as error:
-        raise ValueError("Invalid matrix data.") from error
+        raise ValueError(
+            "Invalid matrix data."
+        ) from error
 
     if matrix.rows == 0 or matrix.cols == 0:
-        raise ValueError("Matrix cannot be empty.")
+        raise ValueError(
+            "Matrix cannot be empty."
+        )
 
     return matrix
 
@@ -256,17 +263,17 @@ def matrix():
 
 
 # ============================================================
-# DELIBERATELY VULNERABLE ENDPOINT FOR DAST LAB
+# SECURE SEARCH ENDPOINT
 # ============================================================
 
 @app.route("/search")
 def search():
     query = request.args.get("q", "")
 
-    # INTENTIONALLY VULNERABLE:
-    # User input is reflected directly into HTML.
-    # This endpoint is used only for the OWASP ZAP lab.
-    return f"<h2>Search Result: {query}</h2>"
+    # Escape user input before inserting it into HTML.
+    safe_query = escape(query)
+
+    return f"<h2>Search Result: {safe_query}</h2>"
 
 
 # ============================================================
