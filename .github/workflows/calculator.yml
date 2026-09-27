@@ -129,6 +129,15 @@ jobs:
             http://calculator-app:5000/
 
       # ==========================================================
+      # PREPARE ZAP OUTPUT DIRECTORY
+      # ==========================================================
+
+      - name: Prepare ZAP Output Directory
+        run: |
+          mkdir -p zap-output
+          chmod 777 zap-output
+
+      # ==========================================================
       # OWASP ZAP DAST - ACTIVE SCAN
       # ==========================================================
 
@@ -136,13 +145,13 @@ jobs:
         run: |
           docker run --rm \
             --network zap-network \
-            -v "${{ github.workspace }}:/zap/wrk/:rw" \
+            -v "${{ github.workspace }}/zap-output:/zap/wrk:rw" \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-full-scan.py \
             -t http://calculator-app:5000 \
-            -c /zap/wrk/zap-rules.conf \
-            -r zap-report.html \
-            -J zap-report.json
+            -c /zap/wrk/../zap-rules.conf \
+            -r /zap/wrk/zap-report.html \
+            -J /zap/wrk/zap-report.json
 
       # ==========================================================
       # UPLOAD ZAP REPORT
@@ -154,8 +163,8 @@ jobs:
         with:
           name: owasp-zap-report
           path: |
-            zap-report.html
-            zap-report.json
+            zap-output/zap-report.html
+            zap-output/zap-report.json
 
       # ==========================================================
       # CLEANUP
