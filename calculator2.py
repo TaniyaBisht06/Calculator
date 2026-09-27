@@ -8,6 +8,18 @@ from markupsafe import escape
 app = Flask(__name__)
 
 
+# ============================================================
+# SECURITY HEADERS
+# ============================================================
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to every response."""
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+    return response
+
+
 def error_response(message):
     """Create a consistent error response."""
     return {
