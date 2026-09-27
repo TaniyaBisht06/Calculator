@@ -128,7 +128,7 @@ jobs:
             curlimages/curl:latest \
             http://calculator-app:5000/
 
-      # ==========================================================
+            # ==========================================================
       # PREPARE ZAP OUTPUT DIRECTORY
       # ==========================================================
 
@@ -145,13 +145,13 @@ jobs:
         run: |
           docker run --rm \
             --network zap-network \
-            -v "${{ github.workspace }}/zap-output:/zap/wrk:rw" \
+            -v "${{ github.workspace }}:/zap/wrk:rw" \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-full-scan.py \
             -t http://calculator-app:5000 \
-            -c /zap/wrk/../zap-rules.conf \
-            -r /zap/wrk/zap-report.html \
-            -J /zap/wrk/zap-report.json
+            -c /zap/wrk/zap-rules.conf \
+            -r /zap/wrk/zap-output/zap-report.html \
+            -J /zap/wrk/zap-output/zap-report.json
 
       # ==========================================================
       # UPLOAD ZAP REPORT
@@ -165,7 +165,6 @@ jobs:
           path: |
             zap-output/zap-report.html
             zap-output/zap-report.json
-
       # ==========================================================
       # CLEANUP
       # ==========================================================
