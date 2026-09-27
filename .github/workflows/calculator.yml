@@ -152,6 +152,7 @@ jobs:
             -c /zap/wrk/zap-rules.conf \
             -r /zap/wrk/zap-output/zap-report.html \
             -J /zap/wrk/zap-output/zap-report.json
+            -I
 
       # ==========================================================
       # UPLOAD ZAP REPORT
